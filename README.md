@@ -177,12 +177,4 @@ Elle permet :
   * **404** : ressource non trouvée
   * **500** : erreur serveur
 
-# Auteur
-
-Projet réalisé par :
-
-**Ange Domguem**
-
-# Licence
-
 Projet réalisé dans le cadre d’un travail académique.
