@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Blog API Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #f0f2f5;
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px 0;
+        }
+
+        .container {
+            background: #c2d2dd; 
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #bcdaf3; 
+        }
+
+        h1, h4 {
+            color: #333;
+        }
+
+        input, textarea {
+            border-radius: 6px;
+            border: 1px solid #c2bdbd;
+        }
+
+        button {
+            border-radius: 6px;
+        }
+
+        #articles .card {
+            background-color: #e0f0ff;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container mt-3">
+        <h1 class="text-center mb-4">Gestion des Articles</h1>
+
+        <div class="card p-2 mb-2">
+            <h7>Créer / Modifier un article</h7>
+             <input id="ID" class="form-control mb-2" placeholder="ID">
+            <input id="titre" class="form-control mb-2" placeholder="Titre">
+            <textarea id="contenu" class="form-control mb-2" placeholder="Contenu"></textarea>
+            <input id="auteur" class="form-control mb-2" placeholder="Auteur">
+            <input id="Categorie" class="form-control mb-2" placeholder="Categorie">
+            <input id="Tags" class="form-control mb-2" placeholder="Tags">
+            <button onclick="saveArticle()">Clique ici</button>
+        </div>
+
+        <div class="card p-2 mb-2">
+            <input id="deleteId" class="form-control mb-2" placeholder="ID de l'article">
+            <button onclick="deleteArticle()">Supprimer</button>
+        </div>
+
+        <div class="card p-2 mb-2">
+            <input id="search" class="form-control mb-2" placeholder="ID de l'article">
+            <button onclick="searchArticle()">Rechercher</button>
+        </div>
+
+        <div class="card p-2">
+            <button class="btn btn-dark mb-2 w-100" onclick="loadArticles()">Afficher la liste des articles</button>
+            <div id="articles"></div>
+        </div>
+
+        <!-- Champ caché pour édition -->
+        <input type="hidden" id="articleId">
+    </div>
+
+    <script>
+        const API_URL = "http://localhost:3000/api/articles"; 
+
+        // Créer ou Modifier un article
+        async function saveArticle() {
+            const id = document.getElementById("articleId").value;
+            const article = {
+                titre: document.getElementById("titre").value,
+                contenu: document.getElementById("contenu").value,
+                auteur: document.getElementById("auteur").value
+            };
+
+            if (!article.titre || !article.contenu || !article.auteur) {
+                alert("Veuillez remplir tous les champs !");
+                return;
+            }
+
+            if (id) {
+                await fetch(`${API_URL}/${id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(article)
+                });
+                alert("Article modifié !");
+            } else {
+                await fetch(API_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(article)
+                });
+                alert("Article créé !");
+            }
+
+            // Réinitialiser le formulaire
+            document.getElementById("titre").value = "";
+            document.getElementById("contenu").value = "";
+            document.getElementById("auteur").value = "";
+            document.getElementById("articleId").value = "";
+
+            loadArticles();
+        }
+
+        // Charger tous les articles
+        async function loadArticles() {
+            const res = await fetch(API_URL);
+            const data = await res.json();
+            displayArticles(data);
+        }
+
+        // Rechercher article
+        async function searchArticle() {
+            const query = document.getElementById("search").value;
+            if (!query) return loadArticles();
+
+            const res = await fetch(`${API_URL}/search?query=${query}`);
+            const data = await res.json();
+            displayArticles(data);
+        }
+
+        // Supprimer article
+        async function deleteArticle() {
+            const id = document.getElementById("deleteId").value;
+            if (!id) {
+                alert("Veuillez saisir l'ID de l'article à supprimer !");
+                return;
+            }
+
+            await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+            alert("Article supprimé !");
+            document.getElementById("deleteId").value = "";
+            loadArticles();
+        }
+
+        // Préparer l’édition d’un article
+        async function editArticle(id) {
+            const res = await fetch(`${API_URL}/${id}`);
+            const article = await res.json();
+
+            document.getElementById("titre").value = article.titre;
+            document.getElementById("contenu").value = article.contenu;
+            document.getElementById("auteur").value = article.auteur;
+            document.getElementById("articleId").value = article.id;
+
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+
+        // Afficher les articles
+        function displayArticles(data) {
+            const container = document.getElementById("articles");
+            container.innerHTML = "";
+            data.forEach(article => {
+                container.innerHTML += `
+                    <div class="card mb-2 p-3">
+                        <h5>${article.titre}</h5>
+                        <p>${article.contenu}</p>
+                        <small>Auteur : ${article.auteur}</small>
+                        <br><br>
+                        <button class="btn btn-warning btn-sm me-2" onclick="editArticle(${article.id})">
+                            Modifier
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteSpecificArticle(${article.id})">
+                            Supprimer
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        // Supprimer article depuis la liste
+        async function deleteSpecificArticle(id) {
+            if (!confirm("Voulez-vous vraiment supprimer cet article ?")) return;
+            await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+            loadArticles();
+        }
+
+        // Charger les articles au démarrage
+        window.onload = loadArticles;
+    </script>
+</body>
+</html>
